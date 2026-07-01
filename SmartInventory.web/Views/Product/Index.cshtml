@@ -1,0 +1,83 @@
+﻿@model IEnumerable<SmartInventory.Model.Product>
+
+@{
+    ViewData["HeaderTitle"] = "Products";
+    ViewData["BreadcrumbFirst"] = "Home";
+    ViewData["BreadcrumbActive"] = "Products List";
+}
+
+<div class="row">
+    <div class="col">
+         <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                    <a asp-action="Create" class="btn btn-success btn-sm">Create New</a>
+                </h3>
+              </div>
+              <div class="card-body">
+                  <style>
+                      #ProducstDataTable th,
+                      #ProducstDataTable td {
+                          vertical-align: middle !important;
+                          text-align: center;
+                      }
+                  </style>
+
+                <table id="ProducstDataTable" class="table table-bordered table-striped"> 
+                    <thead>
+        				<tr>
+        					<th>
+                                @Html.DisplayNameFor(model => model.Name)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Description)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Price)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.StockQuantity)
+                            </th>
+                            <th>Action</th>
+        				</tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model) {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Name)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Description)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Price)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.StockQuantity)
+                                </td>
+                                <td>
+                                    @Html.ActionLink("Edit", "Edit", new { id=item.Id } , new { @class = "btn btn-sm btn-primary mr-1" }) |
+                                    @Html.ActionLink("Details", "Details", new { id=item.Id } , new { @class = "btn btn-sm btn-info mr-1" } ) |
+                                    @Html.ActionLink("Delete", "Delete", new { id=item.Id } , new { @class = "btn btn-sm btn-danger" })
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+              </div> 
+         </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // Clean & isolated DataTable initialization wrapper
+            $("#ProducstDataTable").DataTable({
+                "responsive": true,
+                "autoWidth": false
+            });
+        });
+    </script>
+}
