@@ -16,54 +16,29 @@
               </div>
               <div class="card-body">
                   <style>
-                      #ProducstDataTable th,
-                      #ProducstDataTable td {
+                      #productsDataTable th,
+                      #productsDataTable td {
                           vertical-align: middle !important;
                           text-align: center;
                       }
                   </style>
 
-                <table id="ProducstDataTable" class="table table-bordered table-striped"> 
+                <!-- Anti-Forgery Token for secure JavaScript POST requests -->
+                @Html.AntiForgeryToken()
+
+                <!-- Fixed ID to 'productsDataTable' to match the jQuery selector exactly -->
+                <table id="productsDataTable" class="table table-bordered table-striped"> 
                     <thead>
         				<tr>
-        					<th>
-                                @Html.DisplayNameFor(model => model.Name)
-                            </th>
-                            <th>
-                                @Html.DisplayNameFor(model => model.Description)
-                            </th>
-                            <th>
-                                @Html.DisplayNameFor(model => model.Price)
-                            </th>
-                            <th>
-                                @Html.DisplayNameFor(model => model.StockQuantity)
-                            </th>
+        					<th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Stock Quantity</th>
                             <th>Action</th>
         				</tr>
                     </thead>
-                    <tbody>
-                        @foreach (var item in Model) {
-                            <tr>
-                                <td>
-                                    @Html.DisplayFor(modelItem => item.Name)
-                                </td>
-                                <td>
-                                    @Html.DisplayFor(modelItem => item.Description)
-                                </td>
-                                <td>
-                                    @Html.DisplayFor(modelItem => item.Price)
-                                </td>
-                                <td>
-                                    @Html.DisplayFor(modelItem => item.StockQuantity)
-                                </td>
-                                <td>
-                                    @Html.ActionLink("Edit", "Edit", new { id=item.Id } , new { @class = "btn btn-sm btn-primary mr-1" }) |
-                                    @Html.ActionLink("Details", "Details", new { id=item.Id } , new { @class = "btn btn-sm btn-info mr-1" } ) |
-                                    @Html.ActionLink("Delete", "Delete", new { id=item.Id } , new { @class = "btn btn-sm btn-danger" })
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
+                    <!-- Kept completely empty. DataTables populates this via AJAX -->
+                    <tbody></tbody>
                 </table>
               </div> 
          </div>
@@ -72,12 +47,83 @@
 
 @section Scripts {
     <script>
-        $(function () {
-            // Clean & isolated DataTable initialization wrapper
-            $("#ProducstDataTable").DataTable({
+        $(document).ready(function () {
+            $("#productsDataTable").DataTable({
+                "processing": true,
+                "serverSide": true,
                 "responsive": true,
-                "autoWidth": false
+                "autoWidth": false,
+                "ajax": {
+                    "url": "@Url.Action("GetDataTables", "Product")",
+                    "type": "POST",
+                    "data": function (d) {
+                        // Map DataTables parameters to our request format
+                        var request = {
+                            draw: d.draw,
+                            start: d.start,
+                            length: d.length,
+                            search: {
+                                value: d.search.value,
+                                regex: d.search.regex
+                            },
+                            order: d.order.map(function (o) {
+                                return {
+                                    column: o.column,
+                                    dir: o.dir
+                                };
+                            }),
+                            columns: d.columns.map(function (c) {
+                                return {
+                                    data: c.data,
+                                    name: c.name,
+                                    searchable: c.searchable,
+                                    orderable: c.orderable,
+                                    search: {
+                                        value: c.search.value,
+                                        regex: c.search.regex
+                                    }
+                                };
+                            })
+                        };
+                        return request;
+                    }
+                },
+                "columns": [
+                    { "data": "name", "name": "Name", "orderable": true, "searchable": true },
+                    { "data": "description", "name": "Description", "orderable": true, "searchable": true },
+                    { "data": "price", "name": "Price", "orderable": true, "searchable": true },
+                    { "data": "stockQuantity", "name": "StockQuantity", "orderable": true, "searchable": true },
+                    {
+                        "data": null,
+                        "name": "Action",
+                        "orderable": false,
+                        "searchable": false,
+                        "render": function (data, type, row) {
+                            var editUrl = '@Url.Action("Edit", "Product")/' + row.id;
+                            var detailsUrl = '@Url.Action("Details", "Product")/' + row.id;
+                            var deleteUrl = '@Url.Action("Delete", "Product")';
+
+                            var editLink = '<a href="' + editUrl + '" class="btn btn-sm btn-primary mr-1">Edit</a>';
+                            var detailsLink = '<a href="' + detailsUrl + '" class="btn btn-sm btn-info mr-1">Details</a>';
+                            var productName = (row.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            
+                            // Grabs token directly from the container page generated by @Html.AntiForgeryToken()
+                            var tokenValue = $('input[name="__RequestVerificationToken"]').val();
+
+                            var deleteForm = '<form action="' + deleteUrl + '" method="post" style="display: inline;" onsubmit="return confirmDelete(\'' + productName + '\');">' +
+                                '<input name="__RequestVerificationToken" type="hidden" value="' + tokenValue + '" />' +
+                                '<input type="hidden" name="id" value="' + row.id + '" />' +
+                                '<button type="submit" class="btn btn-sm btn-danger">Delete</button>' +
+                                '</form>';
+                            return editLink + ' ' + detailsLink + ' ' + deleteForm;
+                        }
+                    }
+                ]
             });
         });
+
+        function confirmDelete(productName) {
+            return confirm('Are you sure you want to delete "' + productName + '"? This action cannot be undone.');
+        }
     </script>
 }

@@ -1,5 +1,6 @@
 ﻿using SmartInventory.BLL.Model;
 using SmartInventory.Contrct.Request;
+using SmartInventory.Contrct.Response;
 using SmartInventory.Model;
 using System;
 using System.Collections.Generic;
@@ -21,4 +22,5 @@ public interface IProductService
     Task<Result<int>> UpdateAsync (Product product);
 
     Task<Result<bool>> DeleteAsync (int id);
+    Task<DataTableResponse<Product>> GetDataTableAsync(DataTableRequest request);
 }

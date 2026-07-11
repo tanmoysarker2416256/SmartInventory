@@ -2,6 +2,7 @@
 using SmartInventory.BLL.Interfaces;
 using SmartInventory.BLL.Model;
 using SmartInventory.Contrct.Request;
+using SmartInventory.Contrct.Response;
 using SmartInventory.Model;
 
 namespace SmartInventory.web.Controllers; 
@@ -15,12 +16,43 @@ public class ProductController : Controller
         _productService = productService;
     }
 
-    public async Task< IActionResult >Index()
+    public IActionResult Index()
 
     {   
-       var products = await _productService.GetAllAsync();
-        return View(products.Data);
+      // var products = await _productService.GetAllAsync();
+        return View();
     }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+
+    public async Task<IActionResult> GetDataTables([FromForm] DataTableRequest request)
+    {
+        if(request == null)
+        {
+            return BadRequest(new DataTableResponse<Product>
+            {
+                Draw = 0,
+                RecordsTotal = 0,
+                RecordsFiltered = 0,
+                Data = new List<Product>(),
+                Error = "Invalid request"
+            });
+        }
+        var response = await _productService.GetDataTableAsync(request);
+        return Json(response);
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     public IActionResult Create()
     {

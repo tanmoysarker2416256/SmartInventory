@@ -1,10 +1,13 @@
-﻿using SmartInventory.BLL.Interfaces;
+﻿using SmartInventory.BLL.Helpers;
+using SmartInventory.BLL.Interfaces;
 using SmartInventory.BLL.Mapping;
 using SmartInventory.BLL.Model;
 using SmartInventory.Contrct.Request;
+using SmartInventory.Contrct.Response;
 using SmartInventory.DAL.Interfaces;
 using SmartInventory.Model;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -128,4 +131,92 @@ public class ProductService : IProductService
         return Result<int>.SuccessResult(existproduct .Id);
 
     }
+
+
+    public async Task<DataTableResponse<Product>>GetDataTableAsync(DataTableRequest request)
+    {
+        try
+        {
+            //builder search predicate 
+
+            var searchPredicate = DataTableHelper.BuilderSearchPredicate<Product>(
+                request,
+                SearchValue =>
+                {
+                    var lowerSearch = SearchValue.ToLower();
+                    return p =>
+                    p.Name.ToLower().Contains(lowerSearch) ||
+                    p.Description.ToLower().Contains(lowerSearch) ||
+                    p.Price.ToString().Contains(SearchValue);
+                }
+                );
+
+            //build order by expression 
+
+            Func<IQueryable<Product>, IOrderedQueryable<Product>>? orderBy = null;
+
+            if(request.Order != null && request.Order.Any() && request.Column != null)
+            {
+                var order = request.Order.First();
+                var columnIndex = order.Column;
+                var isAscending = order.Dir.ToLower() == "asc";
+
+                if(columnIndex>=0 && columnIndex < request.Column.Count)
+                {
+                    var column = request.Column[columnIndex];
+                    var columnKey = column.Data.ToLower();
+
+                    orderBy = columnKey switch
+                    {
+                        "name" => isAscending
+                         ? q => q.OrderBy(p => p.Name)
+                         : q => q.OrderByDescending(p => p.Name),
+                        "description" => isAscending
+                         ? q => q.OrderBy(p => p.Description)
+                         : q => q.OrderByDescending(p => p.Description),
+                        "price" => isAscending
+                        ? q => q.OrderBy(p => p.Price)
+                        : q => q.OrderByDescending(p => p.Price),
+                        "stockquantity" => isAscending
+                         ? q => q.OrderBy(p => p.StockQuantity)
+                         : q => q.OrderByDescending(p => p.StockQuantity),
+                        _ => null
+                    };
+                }
+            }
+
+            
+            // default ordering if no order specificed
+           
+            orderBy ??= q => q.OrderByDescending(p => p.Id);
+
+            //calculate pagination
+            var (pageIndex, pageSize) = DataTableHelper.CalculatePagination(request);
+
+            //get data from repository 
+           var (items , total , totalFilter ) = await _productUnitOfWork.ProductRepository.GetAsync(
+                p => p,
+                searchPredicate,
+                orderBy,
+                null,
+                pageIndex,
+                pageSize,
+                true
+                );
+            return new DataTableResponse<Product>
+            {
+                 Draw =request.Draw,
+                 RecordsTotal = total,
+                 RecordsFiltered = totalFilter,
+                 Data = items.ToList()
+            };
+
+        }
+        catch(Exception) 
+        {
+            throw; 
+        }
+
+    }
+
 }

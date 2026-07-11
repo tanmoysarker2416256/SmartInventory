@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartInventory.DAL.Context;
+using SmartInventory.Model;
 using SmartInventory.web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,11 +15,39 @@ builder.Services.AddDbContext<SmartInventoryDbContext>( options =>
 
 });
 
+//config identity
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    //password settings 
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+
+
+
+    //user setting 
+    options.User.RequireUniqueEmail = true;
+    options.SignIn.RequireConfirmedEmail = false;
+})
+.AddEntityFrameworkStores<SmartInventoryDbContext>()
+.AddDefaultTokenProviders();
+
+
 builder.Services.AddRepositories();
 builder.Services.AddServices();
 
 
 var app = builder.Build();
+
+//seed database with roles and admin user 
+
+using(var scope = app.Services.CreateScope())
+{
+    await SmartInventory.web.Data.DbInitializer.InitializeAsync(scope.ServiceProvider);
+}
 
 
 // Configure the HTTP request pipeline.
@@ -33,6 +63,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
