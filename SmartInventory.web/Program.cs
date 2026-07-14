@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using SmartInventory.DAL.Context;
 using SmartInventory.Model;
 using SmartInventory.web;
@@ -34,6 +35,17 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<SmartInventoryDbContext>()
 .AddDefaultTokenProviders();
+
+//config cookie setting 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+    options.SlidingExpiration=true;
+
+});
 
 
 builder.Services.AddRepositories();
